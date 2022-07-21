@@ -3,3 +3,6 @@ env/snakemake/lib/*
 env/snakemake/include/*
 env/snakemake/pyvenv.cfg
 env/snakemake/lib64
+.snakemake/*
+logs/*.err
+logs/*.out

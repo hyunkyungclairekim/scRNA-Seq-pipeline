@@ -8,11 +8,17 @@ DOC_TYPE: "GLOBAL_CONFIG"
 analysis_name: "scRNA-Seq-Template"
 working_directory: "my-directory"
 files: {
-  transcriptome: "/my/path/to/transcriptome/",
-  sequencing: [{
+  transcriptome: "../ref/refdata-gex-GRCh38-2020-A/",
+  sequencing: [
+  {
     run_id: "runA",
-    fastq_1: "runA-1.fastq",
-    fastq_2: "runA-2.fastq",
+    fastq_dir: "data/ENCLB067EKD/",
+    library_id: "library-1",
+    experiment_id: "library-1"
+  },
+  {
+    run_id: "runB",
+    fastq_dir: "data/ENCLB067EKD/",
     library_id: "library-1",
     experiment_id: "library-1"
   }
@@ -20,10 +26,19 @@ files: {
 }
 ...
 ---
-DOC_TYPE: "RULE_CONFIGS"
-rule_name: "CR_fastq_to_counts"
+DOC_TYPE: "RULE_CONFIG"
+rule_name: "CellRanger_FASTQ_to_counts"
 parameters: {
-  ncells: 10000
+  ncells: 10000,
+  envmodules: ["gcc/6.2.0", "cellranger/6.1.2"],
+  extra_args: "--include-introns",
+  checkfiles: ["cloupe.cloupe", "possorted_genome_bam.bam", "possorted_genome_bam.bam.bai",
+    "metrics_summary.csv", "web_summary.html", "filtered_feature_bc_matrix/barcodes.tsv.gz",
+    "filtered_feature_bc_matrix/features.tsv.gz", "filtered_feature_bc_matrix/matrix.mtx.gz",
+    "molecule_info.h5", "filtered_feature_bc_matrix.h5", "raw_feature_bc_matrix.h5",
+    "raw_feature_bc_matrix/barcodes.tsv.gz", "raw_feature_bc_matrix/features.tsv.gz",
+    "raw_feature_bc_matrix/matrix.mtx.gz"
+  ]
 }
 resources: {
   walltime: "02:30:00",

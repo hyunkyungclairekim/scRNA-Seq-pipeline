@@ -1,17 +1,17 @@
 #!/bin/bash
-#PBS -N ATAC-Seq-pipeline
+#PBS -N scRNA-Seq-pipeline
 #PBS -S /bin/bash
 #PBS -l walltime=08:00:00
 #PBS -l nodes=1:ppn=1
 #PBS -l mem=2gb
-#PBS -o logs/ATAC-Seq-pipeline.out
-#PBS -e logs/ATAC-Seq-pipeline.err
+#PBS -o logs/scRNA-Seq-pipeline.out
+#PBS -e logs/scRNA-Seq-pipeline.err
 
 # File Name: run_pipeline.sh
 # Created On: 2022-07-07
 # Created By: ZW
-# Purpose: runs the ATAC-Seq alignment, Peak-Calling, and QC pipeline
-# for a given set of fastq files and experimental metadata
+# Purpose: runs the scRNA-Seq alignment, quantification, and analysis
+# pipeline for a given set of fastq files and experimental metadata
 
 # check passed commandline arguments
 ## of which there are two.
@@ -19,7 +19,7 @@
 ###   -c <analysis configuration file .yaml> [required]
 ###   -d (BOOLEAN flag to complete a snakemake dry run) [optional]
 
-PIPELINE_NAME="ATAC-Seq-pipeline"
+PIPELINE_NAME="scRNA-Seq-pipeline"
 
 
 while getopts ":j:c:d" 'opt';
@@ -50,7 +50,7 @@ echo "dry run ?: ${dry_run_flag}"
 # run the snakemake workflow
 snakemake --snakefile Snakefile \
     -j ${parallel_jobs} -kp --rerun-incomplete \
-    --config cfg_file=${config_file} \
+    --config yaml_config=${config_file} \
     --cluster "qsub -V -l walltime={resources.walltime} \
      -l nodes={resources.nodes}:ppn={resources.processors_per_node} \
      -l mem={resources.total_memory}mb \
@@ -64,5 +64,4 @@ snakemake --snakefile Snakefile \
 echo "-----------------------------"
 echo "      ${PIPELINE_NAME}       "
 echo "      Pipeline Done!         "
-echo "\n"
 

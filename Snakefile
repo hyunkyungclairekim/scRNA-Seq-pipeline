@@ -7,51 +7,56 @@
 # Module Imports
 # ----------------------------------------------------------------------------
 from gardnersnake.core import Configuration
-from operator import itemgetter
+from pathlib import Path
 
-# Function Defintions
-# ----------------------------------------------------------------------------
-get_run_id = itemgetter("run_id")
-
-def get_fastqs_dir(runs, run_id):
-    pass
 
 # Global Configuration
 # ----------------------------------------------------------------------------
-cfg = Configuration("config/scRNA-Seq-template.yaml")
+yaml_config_filepath = Path(config["yaml_config"])
+cfg = Configuration(filepath=yaml_config_filepath)
 cfg.load()
 
-GLOBS = cfg.global_params
-RULES = cfg.rule_params
+GLOBALS = cfg.global_params
 
-RUNS = 
+# build a map of the sequencing data
+SEQ = GLOBALS.files.sequencing
+RUN_IDS = [s["run_id"] for s in SEQ]  # get the run ids for each sequencing obj
+SEQ_MAP = {run_id:idx for idx,run_id in enumerate(RUN_IDS)}  # get their index 
 
 
-# Rule 0. Align and Quantify from FASTQ.
+# Function Definitions
+# ----------------------------------------------------------------------------
+get_fastq_dir = lambda run_id: SEQ[SEQ_MAP[run_id]]["fastq_dir"] 
+
+
+# Rule 0. Pipeline Global Returns
+# ----------------------------------------------------------------------------
+rule All:
+    input: 
+        expand("cellranger_counts.{run_id}.rc.out", run_id=RUN_IDS)
+        
+
+# Rule 1. Align and Quantify from FASTQ.
 # ---------------------------------------------------------------------------
 
-cr_rp = RULES.CR_fastq_to_counts
-rule CR_fastq_to_counts:
-    input: ### what if input != output from prev func
-        transcriptome = GLOBS.files.transcriptome,
-        fastq = get_fastqs_dir(runs=GLOBS.files.sequencing, run_id="{wildcards.run}")
-    output:
-        rc = "CR_fastq_to_counts.rc.out"
-    params: **(cr_rp.parameters)
-    # TODO: lambda wildcards: wildcards.sample
-    resources: **(cr_rp.resources)
-    envmodules:
-        "gcc/6.2.0",
-        "cellranger/6.1.2"
+cellranger_rp = cfg.get_rule_params(rulename="CellRanger_FASTQ_to_counts")
+
+rule CellRanger_FASTQ_to_counts:
+    input:
+        transcriptome = GLOBALS.files.transcriptome,
+        fastq_dir = lambda wildcards: get_fastq_dir(run_id=f"{wildcards.run_id}")
+    output: cellranger_counts_rc = "cellranger_counts.{run_id}.rc.out"
+    params: **(cellranger_rp.parameters), sample = lambda wildcards: f"{wildcards.run_id}"
+    resources: **(cellranger_rp.resources)
+    envmodules: *(cellranger_rp.parameters.envmodules)
     shell:
-        """
-        cellranger count --id= {params.run_id}\
-                        --transcriptome={input.transcriptome} \
-                        --fastqs={input.fastq} \
-                        --sample={params.samples} \
-                        --include-introns \
-                        --expect-cells={params.ncells} \
-                        --localcores={resources.processors_per_node} \
-                        --localmem={resources.total_memory_gb} \
-        && check_directory -o {output.rc} {params.checkfiles} {params.alignment_directory}
-    	"""
+        "cellranger count --id= {params.sample}"
+        " --transcriptome={input.transcriptome}"
+        " --fastqs={input.fastq_dir}"
+        " --sample={params.sample}"
+        " --expect-cells={params.ncells}"
+        " --localcores={resources.processors_per_node}"
+        " --localmem={resources.total_memory_gb}"
+        " {params.extra_args}"
+        " && check_directory -o {output.cellranger_counts_rc}"
+        " {params.checkfiles} {params.sample}/outs/"
