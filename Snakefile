@@ -60,3 +60,5 @@ rule CellRanger_FASTQ_to_counts:
         " {params.extra_args}"
         " && check_directory -o {output.cellranger_counts_rc}"
         " {params.checkfiles} {params.sample}/outs/"
+
+
